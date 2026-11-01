@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>검단도서관 리아(L.I.A) - AI 문학 처방 키오스크</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Pretendard', sans-serif; }
+        .receipt-font { font-family: 'Courier New', Courier, monospace; }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800 min-h-screen flex flex-col justify-between">
+
+    <!-- 상단 헤더 -->
+    <header class="bg-emerald-800 text-white shadow-md relative z-20">
+        <div class="max-w-6xl mx-auto px-4 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-3">
+                <div class="bg-emerald-700 p-2.5 rounded-xl shadow-inner">
+                    <svg class="w-7 h-7 text-emerald-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-tight">검단도서관 리아(L.I.A) AI 문학 처방 키오스크</h1>
+                    <p class="text-xs text-emerald-200">고전 명작 데이터베이스 & 도서관정보나루 libSrchByBook 100개 대량 연동</p>
+                </div>
+            </div>
+
+            <!-- 지역구 및 모델 선택 -->
+            <div class="flex flex-wrap items-center gap-2 bg-emerald-900/60 p-2 rounded-xl border border-emerald-700">
+                <div class="flex items-center gap-1.5 text-xs text-emerald-200 font-medium px-2">
+                    <span>📍 설치 거점:</span>
+                </div>
+                <select id="districtSelect" class="bg-emerald-950 text-white text-xs font-semibold px-3 py-1.5 rounded-lg border border-emerald-600 focus:outline-none cursor-pointer">
+                    <option value="incheon_seohae">인천 서구/서해구 (지역코드: 23)</option>
+                    <option value="seoul_eunpyeong">서울 은평구 (지역코드: 11)</option>
+                    <option value="gyeongnam_geoje">경상남도 거제시 (지역코드: 38)</option>
+                </select>
+                <select id="llmSelect" class="bg-emerald-950 text-emerald-300 text-xs font-semibold px-3 py-1.5 rounded-lg border border-emerald-600 focus:outline-none cursor-pointer">
+                    <option value="gemma">🤖 AI 엔진: 구글 젬마 (Gemma 4)</option>
+                    <option value="llama">🤖 AI 엔진: 메타 라마 (Llama 3.3)</option>
+                </select>
+            </div>
+        </div>
+    </header>
+
+    <!-- 메인 콘텐츠 영역 -->
+    <main class="max-w-6xl mx-auto px-4 py-8 w-full grid grid-cols-1 lg:grid-cols-12 gap-8 relative z-10">
+        
+        <!-- 좌측: 고민 입력 및 처방 패널 -->
+        <section class="lg:col-span-7 bg-white rounded-2xl shadow-sm border border-slate-200 p-6 flex flex-col justify-between">
+            <div>
+                <div class="flex justify-between items-center mb-4">
+                    <span class="bg-emerald-100 text-emerald-800 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">AI 심리·문학 처방실</span>
+                    <span class="text-xs text-slate-500 font-medium">민원 대기 시간을 지혜로운 독서 시간으로</span>
+                </div>
+                
+                <h2 class="text-lg font-bold text-slate-800 mb-2">오늘 마음속에 담아둔 고민이나 상태를 골라주세요</h2>
+                <p class="text-sm text-slate-500 mb-6">입력하신 고민을 AI가 실시간으로 분석하여 가장 어울리는 고전 명작을 매칭하고 맞춤형 처방전을 발급합니다.</p>
+
+                <!-- 감정 및 고민 태그 선택 -->
+                <div class="mb-6">
+                    <label class="block text-xs font-bold text-slate-600 mb-2 uppercase tracking-wide">고민 키워드 선택 (클릭 시 자동 입력)</label>
+                    <div class="flex flex-wrap gap-2">
+                        <button type="button" id="tagLove" class="px-3.5 py-2 rounded-xl text-xs font-medium bg-slate-100 text-slate-700 hover:bg-emerald-100 hover:text-emerald-800 active:scale-95 border border-slate-200 transition cursor-pointer"># 운명적 사랑과 열정</button>
+                        <button type="button" id="tagIdentity" class="px-3.5 py-2 rounded-xl text-xs font-medium bg-slate-100 text-slate-700 hover:bg-emerald-100 hover:text-emerald-800 active:scale-95 border border-slate-200 transition cursor-pointer"># 타인의 시선과 고독</button>
+                        <button type="button" id="tagWander" class="px-3.5 py-2 rounded-xl text-xs font-medium bg-slate-100 text-slate-700 hover:bg-emerald-100 hover:text-emerald-800 active:scale-95 border border-slate-200 transition cursor-pointer"># 청춘의 방황과 성장</button>
+                        <button type="button" id="tagPressure" class="px-3.5 py-2 rounded-xl text-xs font-medium bg-slate-100 text-slate-700 hover:bg-emerald-100 hover:text-emerald-800 active:scale-95 border border-slate-200 transition cursor-pointer"># 억압과 일상의 무게</button>
+                    </div>
+                </div>
+
+                <!-- 직접 입력 텍스트박스 -->
+                <div class="mb-6">
+                    <label class="block text-xs font-bold text-slate-600 mb-2 uppercase tracking-wide">또는 고민을 자유롭게 적어주세요</label>
+                    <textarea id="userPromptInput" rows="3" class="w-full rounded-xl border border-slate-200 p-3.5 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none text-slate-700 placeholder-slate-400" placeholder="예: 일상이 너무 지루하고 반복돼요. 내 삶의 의미를 찾고 싶습니다."></textarea>
+                </div>
+            </div>
+
+            <!-- 처방 생성 버튼 및 API 상태 표시 -->
+            <div class="space-y-3 pt-4 border-t border-slate-100">
+                <button type="button" id="generateBtn" class="w-full bg-emerald-700 hover:bg-emerald-800 active:bg-emerald-900 text-white font-semibold py-4 rounded-xl shadow-md transition flex justify-center items-center gap-2 text-base cursor-pointer">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
+                    <span>AI 맞춤형 고전문학 처방 및 관내 소장 도서관 조회</span>
+                </button>
+                <div class="flex justify-between items-center text-xs text-slate-500 px-1">
+                    <span id="apiStatusBadge" class="text-emerald-700 font-bold">🟢 젬마·라마 멀티 LLM & 100개 대량 연동 완료</span>
+                    <button type="button" id="settingsBtn" class="text-emerald-700 hover:underline font-bold cursor-pointer">⚙️ API 설정</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- 우측: 결과 처방전 및 도서관 소장 안내 -->
+        <section class="lg:col-span-5 flex flex-col gap-6">
+            
+            <div id="resultCard" class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 flex flex-col justify-between relative overflow-hidden">
+                <div class="absolute top-0 right-0 bg-amber-100 text-amber-800 text-[10px] font-bold px-3 py-1 rounded-bl-xl">OFFICIAL L.I.A PRESCRIPTION</div>
+                
+                <div>
+                    <div class="text-center pb-4 border-b border-dashed border-slate-300 mb-4">
+                        <h3 class="font-bold text-slate-800 text-base">🏛️ 검단도서관 문화복지 심층 문학 처방전</h3>
+                        <p class="text-xs text-slate-500 receipt-font mt-1">NO. LIA-2026-1101-1600</p>
+                    </div>
+
+                    <!-- 초기 상태 안내 -->
+                    <div id="placeholderState" class="py-12 text-center">
+                        <div class="bg-emerald-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-3 text-emerald-600">
+                            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
+                        </div>
+                        <p class="text-sm font-medium text-slate-600">고민을 선택하거나 입력하고 깊이 있는 처방전을 발급받으세요.</p>
+                        <p class="text-xs text-slate-400 mt-1">AI가 고민에 딱 맞는 고전 명작을 골라 실시간 처방을 제공합니다.</p>
+                    </div>
+
+                    <!-- 결과 출력 상태 -->
+                    <div id="prescriptionContent" class="hidden space-y-4">
+                        <div class="bg-emerald-50 rounded-xl p-4 border border-emerald-100">
+                            <span id="resAiBadge" class="text-[11px] font-bold text-emerald-700 uppercase">AI 감성 처방전</span>
+                            <h4 id="resBookTitle" class="text-lg font-bold text-slate-900 mt-0.5">AI가 최적의 고전을 선정 중입니다...</h4>
+                            <p id="resBookAuthor" class="text-xs font-semibold text-emerald-800">-</p>
+                            <div id="resComment" class="text-xs text-slate-700 mt-2.5 leading-relaxed bg-white p-3.5 rounded-lg border border-emerald-100/60"></div>
+                        </div>
+
+                        <!-- 소장 도서관 조회 섹션 -->
+                        <div>
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="text-xs font-bold text-slate-700 uppercase tracking-wide">🏥 관내 소장 도서관 (실시간 100건 조회)</span>
+                                <span id="currentDistrictLabel" class="text-[11px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded font-medium">선택 지역</span>
+                            </div>
+                            <div id="libraryListContainer" class="space-y-2 max-h-52 overflow-y-auto pr-1">
+                                <!-- 실시간 API 도서관 목록 -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 하단 버튼 -->
+                <div id="actionButtons" class="hidden mt-6 pt-4 border-t border-dashed border-slate-300 flex gap-2">
+                    <button type="button" id="printBtn" class="flex-1 bg-slate-800 hover:bg-slate-900 text-white text-xs font-medium py-2.5 rounded-lg transition flex justify-center items-center gap-1.5 cursor-pointer">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+                        <span>처방전 영수증 출력</span>
+                    </button>
+                    <button type="button" id="resetBtn" class="bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-medium px-4 py-2.5 rounded-lg transition cursor-pointer">다시 하기</button>
+                </div>
+            </div>
+
+            <!-- 디버그 로그 박스 -->
+            <div class="bg-slate-900 text-slate-200 rounded-2xl p-4 text-[11px] font-mono shadow-sm">
+                <div class="flex justify-between items-center mb-1 text-slate-400">
+                    <span class="font-bold text-emerald-400">🔍 젬마·라마 API & 백엔드 통신 로그</span>
+                    <button type="button" id="clearLogBtn" class="hover:text-white text-[10px] cursor-pointer">로그 지우기</button>
+                </div>
+                <div id="apiLogBox" class="max-h-32 overflow-y-auto whitespace-pre-wrap text-slate-300 bg-slate-950 p-2.5 rounded-lg border border-slate-800">시스템 준비 완료. AI 맞춤형 고전 매칭 및 100건 대량 조회 모드 가동 중.</div>
+            </div>
+        </section>
+    </main>
+
+    <!-- 푸터 -->
+    <footer class="bg-white border-t border-slate-200 py-4 text-center text-xs text-slate-400">
+        <p>검단도서관 리아(L.I.A) 프로젝트 — 파이썬 백엔드 릴레이 아키텍처 & 젬마·라마 멀티 LLM 연동 시스템</p>
+    </footer>
+
+    <!-- 설정 모달 -->
+    <div id="settingsModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-xl border border-slate-200 relative z-50">
+            <div class="flex justify-between items-center mb-3">
+                <h3 class="font-bold text-slate-800 text-base">⚙️ 파이썬 백엔드 및 멀티 AI 엔진 설정</h3>
+                <button type="button" id="closeModalXBtn" class="text-slate-400 hover:text-slate-600 text-xl font-bold cursor-pointer">&times;</button>
+            </div>
+            <p class="text-xs text-slate-500 mb-4 leading-relaxed">도서관정보나루 API와 행안부 AI 공통기반 모델(젬마/라마)은 파이썬 백엔드를 통해 안전하게 연동됩니다.</p>
+            <div class="space-y-3">
+                <div class="p-3 bg-emerald-50/70 rounded-xl border border-emerald-200">
+                    <label class="block text-xs font-bold text-emerald-900 mb-1">📚 도서관정보나루 인증키</label>
+                    <input type="text" id="data4LibKeyInput" value="6ccfec20e4f6af131b8883ba9b858d432bfeac4e33f2ed30eb19e0b63e5aece1" class="w-full rounded-lg border border-emerald-300 p-2 text-xs font-mono bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                </div>
+            </div>
+            <div class="mt-5 flex justify-end gap-2">
+                <button type="button" id="closeModalBtn" class="bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-medium px-4 py-2 rounded-xl transition cursor-pointer">닫기</button>
+                <button type="button" id="saveModalBtn" class="bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-medium px-4 py-2 rounded-xl transition cursor-pointer">저장</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const DISTRICT_PRESETS = {
+            "incheon_seohae": { regionName: "인천 서구/서해구", regionCode: "23" },
+            "seoul_eunpyeong": { regionName: "서울 은평구", regionCode: "11" },
+            "gyeongnam_geoje": { regionName: "경상남도 거제시", regionCode: "38" }
+        };
+
+        function logToBox(msg) {
+            const box = document.getElementById('apiLogBox');
+            if (box) {
+                box.innerText += "\n" + msg;
+                box.scrollTop = box.scrollHeight;
+            }
+        }
+
+        function selectTag(tagName, desc) {
+            const input = document.getElementById('userPromptInput');
+            if (input) {
+                input.value = desc;
+                logToBox("[태그 선택] '" + tagName + "' 키워드가 입력창에 반영되었습니다.");
+            }
+        }
+
+        function toggleModal() {
+            const modal = document.getElementById('settingsModal');
+            if (modal) {
+                modal.classList.toggle('hidden');
+            }
+        }
+
+        async function fetchLibrariesFromData4Library(isbn, regionCode) {
+            const pythonProxyUrl = `/api/libraries?isbn=${isbn}&region=${regionCode}&pageSize=100`;
+            logToBox("[파이썬 백엔드 요청] " + pythonProxyUrl);
+
+            try {
+                const response = await fetch(pythonProxyUrl);
+                if (!response.ok) {
+                    return { error: "서버 응답 오류: " + response.status, list: [] };
+                }
+
+                const rawText = await response.text();
+                if (!rawText || rawText.trim().length === 0) {
+                    return { error: "빈 응답값 수신", list: [] };
+                }
+
+                if (rawText.trim().startsWith("{")) {
+                    const jsonData = JSON.parse(rawText);
+                    const errMsg = jsonData?.response?.error;
+                    if (errMsg) return { error: errMsg, list: [] };
+
+                    const libsArray = jsonData?.response?.libs;
+                    if (Array.isArray(libsArray)) {
+                        const parsedList = libsArray.map(item => {
+                            const libObj = item.lib || item;
+                            return {
+                                name: libObj.libName || libObj.name || "도서관명 미상",
+                                address: libObj.address || "주소 정보 없음",
+                                tel: libObj.tel || "",
+                                homepage: libObj.homepage || ""
+                            };
+                        });
+                        return { error: null, list: parsedList };
+                    }
+                }
+
+                return { error: "소장 도서관 정보가 없습니다.", list: [] };
+
+            } catch (e) {
+                return { error: e.message, list: [] };
+            }
+        }
+
+        async function fetchLibrariesSmart(book, districtData) {
+            const isbns = book.altIsbns || [book.isbn];
+            const targetRegionCode = districtData.regionCode;
+
+            for (let i = 0; i < isbns.length; i++) {
+                logToBox("[정밀 조회] ISBN: " + isbns[i] + ", 시도코드: " + targetRegionCode);
+                const res = await fetchLibrariesFromData4Library(isbns[i], targetRegionCode);
+                if (res && res.list && res.list.length > 0) {
+                    return res;
+                }
+                if (res && res.error) {
+                    return res;
+                }
+            }
+            return { error: null, list: [] };
+        }
+
+        // 백엔드 AI에게 고민을 보내고 '선정된 책 + 맞춤형 해설 + 명문장'을 한 번에 받아옵니다.
+        async function fetchLLMPrescription(prompt, selectedLlm) {
+            logToBox("[AI 엔진 요청] " + selectedLlm.toUpperCase() + " 모델이 고민 분석 및 고전 매칭 중...");
+            const response = await fetch('/api/prescribe', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ prompt: prompt, llm: selectedLlm })
+            });
+            return await response.json();
+        }
+
+        async function generatePrescription() {
+            const promptInput = document.getElementById('userPromptInput');
+            const prompt = (promptInput && promptInput.value.trim()) ? promptInput.value.trim() : "지친 일상에 위로가 되는 책을 추천해줘.";
+            const selectedLlm = document.getElementById('llmSelect').value;
+            const districtKey = document.getElementById('districtSelect').value;
+            const districtData = DISTRICT_PRESETS[districtKey];
+
+            document.getElementById('placeholderState').classList.add('hidden');
+            document.getElementById('prescriptionContent').classList.remove('hidden');
+            document.getElementById('actionButtons').classList.add('hidden');
+
+            document.getElementById('apiLogBox').innerText = "=== [AI 맞춤형 고전 선정 & 도서관 조회 시작] ===";
+            logToBox("선택된 AI 엔진: " + selectedLlm.toUpperCase());
+
+            let engineBadgeText = "AI 감성 처방전 [구글 젬마 (Gemma 4)]";
+            if (selectedLlm === 'llama') {
+                engineBadgeText = "AI 독서 에이전트 [메타 라마 (Llama 3.3)]";
+            }
+            document.getElementById('resAiBadge').textContent = engineBadgeText;
+            document.getElementById('resBookTitle').textContent = "고민에 어울리는 고전을 탐색 중입니다...";
+            document.getElementById('resBookAuthor').textContent = "AI 사서 큐레이션 진행 중";
+            document.getElementById('currentDistrictLabel').textContent = districtData.regionName;
+
+            const commentEl = document.getElementById('resComment');
+            commentEl.innerHTML = `<span class='text-emerald-700 animate-pulse font-semibold'>🤖 [${selectedLlm.toUpperCase()}] AI가 고민에 꼭 맞는 고전문학을 고르고 처방 해설을 작성 중입니다...</span>`;
+
+            const libContainer = document.getElementById('libraryListContainer');
+            libContainer.innerHTML = "<div class='text-xs text-emerald-700 font-semibold py-4 text-center animate-pulse'>📡 AI 도서 선정 후 관내 도서관 소장 여부를 조회합니다...</div>";
+
+            try {
+                // 1단계: AI가 고민에 맞는 책을 선정하고 처방문 생성
+                const llmData = await fetchLLMPrescription(prompt, selectedLlm);
+                const matchedBook = llmData.book;
+                const llmCommentText = llmData.comment;
+                const llmQuote = llmData.quote;
+
+                logToBox("✅ [AI 도서 매칭 완료] 선정 도서: " + matchedBook.title + " (ISBN: " + matchedBook.isbn + ")");
+
+                // 화면에 AI가 골라준 책 제목과 저자 표시
+                document.getElementById('resBookTitle').textContent = matchedBook.title;
+                document.getElementById('resBookAuthor').textContent = matchedBook.author + " | ISBN: " + matchedBook.isbn;
+
+                commentEl.innerHTML = `
+                    <div class='mb-2'>💡 <b>[${selectedLlm.toUpperCase()} 실시간 AI 맞춤 처방]</b><br>${llmCommentText}</div>
+                    <div class='p-2.5 bg-emerald-50/80 rounded border border-emerald-200/60 mt-2'>
+                        ✨ <b>처방 명문장:</b> <br><span class='italic font-semibold text-emerald-950'>&ldquo;${llmQuote}&rdquo;</span>
+                    </div>
+                `;
+
+                // 2단계: AI가 선정한 바로 그 책의 ISBN으로 도서관정보나루 실시간 소장 조회
+                const apiResult = await fetchLibrariesSmart(matchedBook, districtData);
+
+                if (apiResult && apiResult.error) {
+                    libContainer.innerHTML = `
+                        <div class="p-3.5 bg-amber-50 text-amber-900 text-xs rounded-xl border border-amber-200 space-y-1">
+                            <div class="font-bold">⚠️ API 메시지:</div>
+                            <div class="font-mono text-[11px] bg-white p-2 rounded border border-amber-100">${apiResult.error}</div>
+                        </div>
+                    `;
+                } else if (apiResult && apiResult.list && apiResult.list.length > 0) {
+                    let htmlContent = '';
+                    const currentRegionName = districtData.regionName;
+
+                    apiResult.list.forEach(lib => {
+                        let isTargetArea = false;
+                        const addr = lib.address || "";
+
+                        if (currentRegionName.includes("거제")) {
+                            isTargetArea = addr.includes("거제");
+                        } else if (currentRegionName.includes("은평")) {
+                            isTargetArea = addr.includes("은평");
+                        } else {
+                            isTargetArea = addr.includes("서구") || addr.includes("서해구");
+                        }
+                        
+                        if (isTargetArea) {
+                            const homepageLink = lib.homepage ? `<a href="${lib.homepage}" target="_blank" class="text-[10px] text-emerald-700 underline ml-1">홈페이지</a>` : '';
+                            
+                            htmlContent += `
+                                <div class="flex justify-between items-center bg-slate-50 p-3 rounded-xl border border-emerald-300 bg-emerald-50/30 text-xs">
+                                    <div>
+                                        <div class="font-bold text-slate-800 flex items-center gap-1.5">
+                                            <span>🏛️ ${lib.name}</span>
+                                            ${homepageLink}
+                                        </div>
+                                        <div class="text-slate-500 mt-0.5 text-[11px]">📍 ${lib.address} ${lib.tel ? '· 📞 ' + lib.tel : ''}</div>
+                                    </div>
+                                    <span class="bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full text-[10px] shrink-0">관내 소장</span>
+                                </div>
+                            `;
+                        }
+                    });
+
+                    if (htmlContent) {
+                        libContainer.innerHTML = htmlContent;
+                        logToBox("✅ 관내 소장 도서관 필터링 성공");
+                    } else {
+                        libContainer.innerHTML = `
+                            <div class="p-3.5 bg-amber-50 text-amber-900 text-xs rounded-xl border border-amber-200 space-y-2">
+                                <div class="font-bold">📌 관내 소장 도서관 검색 결과 0건</div>
+                                <p class="text-[11px] text-amber-800 leading-relaxed">선택하신 지역 내 소장처가 없습니다.</p>
+                            </div>
+                        `;
+                    }
+                } else {
+                    libContainer.innerHTML = `<div class="p-3.5 bg-amber-50 text-amber-900 text-xs rounded-xl border border-amber-200">소장 도서관 정보 없음</div>`;
+                }
+
+            } catch (err) {
+                logToBox("[처리 오류] " + err.message);
+                commentEl.innerHTML = `<span class="text-red-600 font-bold">처방 생성 중 오류가 발생했습니다: ${err.message}</span>`;
+            }
+
+            document.getElementById('actionButtons').classList.remove('hidden');
+        }
+
+        function resetForm() {
+            document.getElementById('placeholderState').classList.remove('hidden');
+            document.getElementById('prescriptionContent').classList.add('hidden');
+            document.getElementById('actionButtons').classList.add('hidden');
+            document.getElementById('userPromptInput').value = '';
+            logToBox("[초기화] 화면 리셋 완료");
+        }
+
+        (function initApp() {
+            document.getElementById('generateBtn').onclick = generatePrescription;
+            document.getElementById('settingsBtn').onclick = toggleModal;
+            document.getElementById('closeModalBtn').onclick = toggleModal;
+            document.getElementById('closeModalXBtn').onclick = toggleModal;
+            document.getElementById('printBtn').onclick = function() { window.print(); };
+            document.getElementById('resetBtn').onclick = resetForm;
+            document.getElementById('clearLogBtn').onclick = function() {
+                document.getElementById('apiLogBox').innerText = '로그 초기화됨';
+            };
+
+            document.getElementById('tagLove').onclick = function() { selectTag('사랑', '운명적인 사랑과 뜨거운 열정에 대한 사색이 필요해요.'); };
+            document.getElementById('tagIdentity').onclick = function() { selectTag('정체성', '타인의 시선을 의식하느라 지친 마음을 위로받고 싶어요.'); };
+            document.getElementById('tagWander').onclick = function() { selectTag('방황', '새로운 전환점 앞에서 방황하는 청춘의 성장통이 궁금해요.'); };
+            document.getElementById('tagPressure').onclick = function() { selectTag('억압', '틀에 박힌 일상의 무게와 억압에서 벗어나 숨을 돌리고 싶어요.'); };
+        })();
+    </script>
+</body>
+</html>
